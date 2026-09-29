@@ -1,6 +1,6 @@
 # Email MCP
 
-Local MCP server for a single IMAP and SMTP mailbox. It exposes `list_folders`, `list_messages`, `read_message`, and `send_message`. Reading uses IMAP `BODY.PEEK` and does not mark messages as read. Mail content is returned to the MCP client, so only connect this server to clients you trust.
+Local MCP server for IMAP and SMTP mailboxes. It exposes `list_accounts`, `list_folders`, `list_messages`, `read_message`, and `send_message`. Reading uses IMAP `BODY.PEEK` and does not mark messages as read. Mail content is returned to the MCP client, so only connect this server to clients you trust.
 
 ## Install
 
@@ -25,6 +25,22 @@ MAIL_PASSWORD_FILE = "/absolute/path/to/private/password-file"
 ```
 
 Restart the MCP client after changing its configuration. The server runs over stdio and makes outbound TLS connections to the configured mail provider.
+
+## Multiple accounts
+
+Set `MAIL_ACCOUNTS_FILE` to a local JSON file. Each account uses its address as the selector and references a password file outside the repository. Accounts may share a password file when their mailbox credentials match.
+
+```json
+{
+  "default": "contact@example.com",
+  "accounts": {
+    "contact@example.com": {"password_file": "/private/mail-password"},
+    "catch-all@example.com": {"password_file": "/private/mail-password"}
+  }
+}
+```
+
+Pass `account` to any mail tool to select a mailbox, or omit it to use `default`. `list_accounts` shows available selectors. The original `MAIL_ADDRESS` and `MAIL_PASSWORD_FILE` configuration remains supported for one mailbox.
 
 ## Notes
 

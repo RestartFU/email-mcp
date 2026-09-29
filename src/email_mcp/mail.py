@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import email
 import imaplib
+import json
 import os
 import smtplib
 import ssl
@@ -28,12 +29,35 @@ class Settings:
     smtp_port: int
 
     @classmethod
-    def from_env(cls) -> Settings:
-        address = os.environ.get("MAIL_ADDRESS", "").strip()
-        password_file = os.environ.get("MAIL_PASSWORD_FILE")
+    def accounts(cls) -> tuple[str, list[str]]:
+        accounts_file = os.environ.get("MAIL_ACCOUNTS_FILE")
+        if not accounts_file:
+            address = os.environ.get("MAIL_ADDRESS", "").strip()
+            if not address:
+                raise ValueError("MAIL_ADDRESS is required")
+            return address, [address]
+        config = json.loads(Path(accounts_file).read_text())
+        accounts = config["accounts"]
+        default_address = config["default"]
+        if not isinstance(accounts, dict) or not accounts or default_address not in accounts:
+            raise ValueError("MAIL_ACCOUNTS_FILE needs accounts and a valid default")
+        return default_address, list(accounts)
+
+    @classmethod
+    def from_env(cls, account: str | None = None) -> Settings:
+        default_address, addresses = cls.accounts()
+        address = account or default_address
+        if address not in addresses:
+            raise ValueError(f"Unknown email account: {address}")
+        accounts_file = os.environ.get("MAIL_ACCOUNTS_FILE")
+        if accounts_file:
+            config = json.loads(Path(accounts_file).read_text())
+            password_file = config["accounts"][address]["password_file"]
+        else:
+            password_file = os.environ.get("MAIL_PASSWORD_FILE")
         password = Path(password_file).read_text().rstrip("\r\n") if password_file else os.environ.get("MAIL_PASSWORD", "")
         if not address or not password:
-            raise ValueError("MAIL_ADDRESS and MAIL_PASSWORD_FILE (or MAIL_PASSWORD) are required")
+            raise ValueError("An email address and password file (or MAIL_PASSWORD) are required")
         return cls(
             address=address,
             password=password,
