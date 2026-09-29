@@ -1,0 +1,13 @@
+[project]
+name = "email-mcp"
+version = "0.1.0"
+description = "A local MCP server for an IMAP and SMTP mailbox"
+requires-python = ">=3.10"
+dependencies = ["mcp>=2,<3"]
+
+[project.scripts]
+email-mcp = "email_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
